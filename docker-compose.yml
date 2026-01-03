@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  ziti-controller:
+    image: ziti-controller:latest
+    container_name: ziti-controller
+    restart: unless-stopped
+    volumes:
+      - ./ziti/controller/db:/openziti/db
+      - ./ziti/controller/config:/openziti/config
+    ports:
+      - "1280:1280"
+      - "8441:8441"
+
+  ziti-router:
+    image: ziti-router:latest
+    container_name: ziti-router
+    restart: unless-stopped
+    volumes:
+      - ./ziti/router:/openziti/router
+    depends_on:
+      - ziti-controller
+
+  ziti-console:
+    image: openziti/zac:latest
+    container_name: ziti-console
+    restart: unless-stopped
+    environment:
+      - ZAC_CONTROLLER_URLS=https://controller.live-host.net:1280
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    ports:
+      - "8443:8443"
+    depends_on:
+      - ziti-controller
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy/acme:/data
+    ports:
+      - "80:80"
+      - "443:443"
+
